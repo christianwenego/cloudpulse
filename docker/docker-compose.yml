@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+
+  api:
+    build:
+      context: ../app
+      dockerfile: ../docker/Dockerfile
+    container_name: cloudpulse-api
+    ports:
+      - "5000:5000"
+    environment:
+      - ENVIRONMENT=development
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cloudpulse-net
+
+  redis:
+    image: redis:latest
+    container_name: cloudpulse-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: cloudpulse-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - cloudpulse-net
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  cloudpulse-net:
+    driver: bridge
