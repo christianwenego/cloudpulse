@@ -15,8 +15,9 @@ pipeline {
                 echo 'Lancement des tests pytest...'
                 sh '''
             cd app
-            pip3 install -r requirements.txt -q
-            pytest test.py -v
+            python3 -m venv venv
+            venv/bin/pip install -r requirements.txt -q
+            venv/bin/pytest test.py -v
         '''
             }
         }
