@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo 'Récupération du code depuis GitHub...'
@@ -15,12 +14,10 @@ pipeline {
             steps {
                 echo 'Lancement des tests pytest...'
                 sh '''
-                    cd app
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install -r requirements.txt -q
-                    pytest test.py -v
-                '''
+            cd app
+            pip install -r requirements.txt -q
+            pytest test.py -v
+        '''
             }
         }
 
@@ -59,7 +56,6 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
