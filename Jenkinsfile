@@ -11,11 +11,16 @@ pipeline {
             }
         }
 
-        stage('Vérification') {
+        stage('Tests unitaires') {
             steps {
-                echo 'Vérification des fichiers...'
-                sh 'ls -la'
-                sh 'cat app/requirements.txt'
+                echo 'Lancement des tests pytest...'
+                sh '''
+                    cd app
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt -q
+                    pytest test.py -v
+                '''
             }
         }
 
@@ -26,10 +31,32 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Test sécurité Trivy') {
             steps {
-                echo 'Test de l application...'
-                sh 'docker run --rm cloudpulse-app python -c "import flask; print(flask.__version__)"'
+                echo 'Scan de sécurité de l image...'
+                sh '''
+                    docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:latest image \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 0 \
+                    cloudpulse-app
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Déploiement de l application...'
+                sh '''
+                    docker stop cloudpulse-api || true
+                    docker rm cloudpulse-api || true
+                    docker run -d \
+                        --name cloudpulse-api \
+                        --restart unless-stopped \
+                        -p 5000:5000 \
+                        cloudpulse-app
+                '''
             }
         }
 
@@ -37,10 +64,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline réussi ✅'
+            echo 'Pipeline réussi ✅ Application déployée'
         }
         failure {
-            echo 'Pipeline échoué ❌'
+            echo 'Pipeline échoué ❌ Vérifier les logs'
         }
     }
 }
